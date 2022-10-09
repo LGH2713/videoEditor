@@ -125,19 +125,18 @@ void MainWindow::on_playButton_clicked()
         return ;
     }
 
-    screen = SDL_CreateWindow("Simplest ffmpeg player's Window",
-                              SDL_WINDOWPOS_UNDEFINED,
-                              SDL_WINDOWPOS_UNDEFINED,
-                              p_codec_ctx->width,
-                              p_codec_ctx->height,
-                              SDL_WINDOW_OPENGL);
+//    SDL2嵌入qt
+    screen = SDL_CreateWindowFrom((void *)ui->player->winId());
+
+//    播放界面大小调整
+    ui->player->resize(p_codec_ctx->width, p_codec_ctx->height);
 
     if(screen == nullptr) {
         qDebug() << "SDL_CreateWindow() failed: " << SDL_GetError();
         return;
     }
 
-    sdl_renderer = SDL_CreateRenderer(screen, -1, 0);
+    sdl_renderer = SDL_CreateRenderer(screen, -1, SDL_RENDERER_ACCELERATED);
 
 
     sdl_texture = SDL_CreateTexture(sdl_renderer,
