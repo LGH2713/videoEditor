@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     MainWindow w;
-    return 0;
     w.show();
+    w.setWindowTitle("Video Editor");
     return a.exec();
 }
