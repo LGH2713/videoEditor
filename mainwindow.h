@@ -4,18 +4,7 @@
 #include <QMainWindow>
 #include <QFileDialog>
 #include <QDebug>
-
-extern "C" {
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/imgutils.h>
-#include <libswscale/swscale.h>
-#include <SDL.h>
-#include <SDL_video.h>
-#include <SDL_render.h>
-#include <SDL_rect.h>
-#undef main
-}
+#include "tool.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

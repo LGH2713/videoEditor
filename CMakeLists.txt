@@ -19,7 +19,18 @@ set(PROJECT_SOURCES
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
-)
+        player.cpp
+        player.h
+        playerclock.cpp
+        playerclock.h
+        frame.cpp
+        frame.h
+        tool.h
+        packetqueue.cpp
+        packetqueue.h
+        framequeue.cpp
+        framequeue.h
+    )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(videoEditor
