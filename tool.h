@@ -17,6 +17,8 @@ extern "C" {
 #undef main
 }
 
+#include <iostream>
+
 //如果低于最小AV同步阈值，则不进行AV同步校正
 static const double AV_SYNC_THRESHOLD_MIN = 0.04;
 
@@ -52,7 +54,8 @@ static const unsigned int SAMPLE_QUEUE_SIZE = 9;
 #define FF_QUIT_EVENT (SDL_USEREVENT + 2)
 
 class PacketList {
-    AVPacket *pkt;
+public:
+    AVPacket pkt;
     PacketList *next;
 };
 

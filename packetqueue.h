@@ -8,9 +8,10 @@ class PacketQueue
 public:
     PacketQueue();
     int packet_queue_init(PacketQueue *q);
-    int packet_queue_put(PacketQueue *q, PacketList *pkt);
+    int packet_queue_put(PacketQueue *q, AVPacket *pkt);
     int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block);
     int packet_queue_put_nullpacket(PacketQueue *q, int stream_index);
+    void packet_queue_flush(PacketQueue *q);
     void packet_queue_destory(PacketQueue *q);
     void  packet_queue_abort(PacketQueue *q);
 
