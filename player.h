@@ -26,7 +26,7 @@ class SDLVideo {
 
 class PlayerStat {
 public:
-    std::string fileName;
+    char *fileName;
     AVFormatContext *p_fmt_ctx;
     AVStream *p_audio_stream;
     AVStream *p_video_stream;
