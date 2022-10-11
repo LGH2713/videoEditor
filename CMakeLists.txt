@@ -30,6 +30,8 @@ set(PROJECT_SOURCES
         packetqueue.h
         framequeue.cpp
         framequeue.h
+        audio.cpp
+        audio.h
     )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -63,6 +65,7 @@ find_library(AVUTIL avutil ${PROJECT_SOURCE_DIR}/ffmpeg/lib)
 find_library(AVFORMAT avformat ${PROJECT_SOURCE_DIR}/ffmpeg/lib)
 find_library(SWSCALE swscale ${PROJECT_SOURCE_DIR}/ffmpeg/lib)
 find_library(AVCODEC avcodec ${PROJECT_SOURCE_DIR}/ffmpeg/lib)
+find_library(SWRESAMPLE swresample ${PROJECT_SOURCE_DIR}/ffmpeg/lib)
 
 # 添加sdl头文件
 include_directories(${PROJECT_SOURCE_DIR}/sdl/include)
@@ -70,7 +73,7 @@ include_directories(${PROJECT_SOURCE_DIR}/sdl/include)
 # 添加sdl库文件
 find_library(SDL_LIB SDL2 ${PROJECT_SOURCE_DIR}/sdl/lib/x64)
 
-target_link_libraries(videoEditor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${AVFORMAT} ${AVCODEC} ${AVUTIL} ${SWSCALE} ${SDL_LIB})
+target_link_libraries(videoEditor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${AVFORMAT} ${AVCODEC} ${AVUTIL} ${SWSCALE} ${SWRESAMPLE} ${SDL_LIB})
 
 set_target_properties(videoEditor PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com

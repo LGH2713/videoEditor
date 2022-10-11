@@ -5,6 +5,11 @@ FrameQueue::FrameQueue()
 
 }
 
+FrameQueue::~FrameQueue()
+{
+
+}
+
 int FrameQueue::frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size, int keep_last)
 {
     memset(f, 0, sizeof(FrameQueue));

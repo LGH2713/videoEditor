@@ -111,7 +111,7 @@ void PacketQueue::packet_queue_flush(PacketQueue *q)
     PacketList *pkt, *pkt1;
 
     SDL_LockMutex(q->mutex);
-    for(pkt = q->first_pkt; pkt; pkt = pkt1) // 循环解绑所有包
+    for(pkt = q->first_pkt; pkt; pkt = pkt1) // 循环解绑所有数据包
     {
         pkt1 = pkt->next;
         av_packet_unref(&pkt->pkt);

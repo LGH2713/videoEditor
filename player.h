@@ -8,9 +8,10 @@
 #include "packetqueue.h"
 
 class AudioParam {
+public:
     int freq;
     int channels;
-    int64_t channel_layout;
+    AVChannelLayout channel_layout;
     enum AVSampleFormat fmt;
     int frame_size;
     int bytes_pre_sec;
@@ -24,6 +25,7 @@ class SDLVideo {
 };
 
 class PlayerStat {
+public:
     std::string fileName;
     AVFormatContext *p_fmt_ctx;
     AVStream *p_audio_stream;
@@ -52,13 +54,13 @@ class PlayerStat {
     AudioParam audio_param_tgt;
     int audio_hw_buf_size;          // SDL音频缓冲区大小（单位：字节）
     uint8_t *p_audio_frm;           // 指向待播放的一帧音频数据，指向的数据区将被拷入SDL音频缓冲区。若经过重采样则指向audio_frm_rwr，否则指向frame中的音频
-    uint8_t *p_frm_rwr_size;        // 音频重采样的输出缓冲区
+    uint8_t *audio_frm_rwr;        // 音频重采样的输出缓冲区
     unsigned int audio_frm_size;    // 待播放的一帧音频数据（audio_buf指向）的大小
     unsigned int audio_frm_rwr_size;// 申请到的音频缓冲区audio_frm_rwr的实际尺寸
     int audio_cp_index;             // 当前音频帧中已拷入SDL音频缓冲区的位置索引（指向第一个待拷贝字节）
     int audio_write_buf_size;       // 当前音频帧中尚未拷入SDL音频缓冲区的数据量 audio_frm_size = audio_cp_index + audio_write_buf_size
     double audio_clock;
-    int audio_clock_sreial;
+    int audio_clock_serial;
 
     int abort_request;
     int paused;
