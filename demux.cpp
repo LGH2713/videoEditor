@@ -95,6 +95,7 @@ int Demux::demux_thread(void *arg)
 
     std::cout << "demux_thread running..." << std::endl;
 
+    // 4.解复用处理
     while(1) {
         if(is->abort_request) {
             break;
@@ -110,9 +111,11 @@ int Demux::demux_thread(void *arg)
             continue;
         }
 
+        // 4.1从输入文件读取一个packet
         ret = av_read_frame(is->p_fmt_ctx, pkt);
         if(ret < 0) {
             if(ret == AVERROR_EOF) {
+                // 输入文件已读完，则往packet队列中发送NULL packet，以冲洗（flush）解码器，否则解码器中缓存的帧取不出来
                 if(is->video_index >= 0) {
                     PacketQueue::packet_queue_put_nullpacket(&is->video_pkt_queue, is->video_index);
                 }
@@ -128,6 +131,7 @@ int Demux::demux_thread(void *arg)
         continue;
     }
 
+    // 4.3根据当前packet类型（音频、视频、字幕），将其存入对应的packet队列
     if(pkt->stream_index == is->audio_index) {
         PacketQueue::packet_queue_put(&is->audio_pkt_queue, pkt);
     }
