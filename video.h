@@ -4,6 +4,7 @@
 #include "player.h"
 #include "packetqueue.h"
 #include "framequeue.h"
+#include "playerclock.h"
 
 class Video
 {
@@ -26,9 +27,9 @@ public:
     static void video_display(PlayerStat *is);
 
     // 调用后显示每一帧
-    static void video_fresh(void *opaque, double *remaining_time);
+    static void video_refresh(void *opaque, double *remaining_time);
     static int video_playing_thread(void *arg);
-    static void open_video_playing(void *arg);
+    static int open_video_playing(void *arg);
     static int open_video_stream(PlayerStat *is);
 };
 

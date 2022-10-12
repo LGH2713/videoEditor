@@ -18,9 +18,9 @@ public:
     int paused; // 暂停标志
     int *queue_serial; // 指向packet_serial
 
-    double get_clock(PlayerClock *c);
+    static double get_clock(PlayerClock *c);
     static void set_clock_at(PlayerClock *c, double pts, int serial, double time);
-    void set_clock(PlayerClock *c, double pts, int serial);
+    static void set_clock(PlayerClock *c, double pts, int serial);
     void init_clock(PlayerClock *c, int *queue_serial);
     void set_clock_speed(PlayerClock *c, double speed);
     void sync_play_clock_to_slave(PlayerClock *c, PlayerClock *slave);
