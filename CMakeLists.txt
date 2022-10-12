@@ -34,6 +34,8 @@ set(PROJECT_SOURCES
         audio.h
         demux.cpp
         demux.h
+        video.cpp
+        video.h
     )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
