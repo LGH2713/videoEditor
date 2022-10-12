@@ -1,15 +1,19 @@
 #include "player.h"
 
-Player::Player()
+Player::Player(std::string input_filename) : input_filename(input_filename)
 {
 
 }
 
-int Player::playing_running(const std::string p_input_file)
+int Player::playing_running()
 {
     PlayerStat *is = nullptr;
 
-    is = player_init(p_input_file.c_str());
+    if(!input_filename.c_str()) {
+        return -1;
+    }
+
+    is = player_init(input_filename.c_str());
     if(is == nullptr) {
         std::cout << "player init failed\n" << std::endl;
         do_exit(is);
@@ -93,7 +97,7 @@ PlayerStat *Player::player_init(const char * p_input_file)
 
     is->abort_request = 0;
 
-    if(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) {
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER)) {
         av_log(nullptr, AV_LOG_FATAL, "Cann't initialize SDL - %s\n", SDL_GetError());
         av_log(nullptr, AV_LOG_FATAL, "(Did you set the DISPLAY variable?)\n");
         exit(1);

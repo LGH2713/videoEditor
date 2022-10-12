@@ -21,13 +21,15 @@ void MainWindow::on_fileSelect_clicked()
                 this,
                 tr("open a file"),
                 "E:/",
-                tr("video files(*.avi *.mp4 *.wmv *.h265 *.mkv);;All files(*.*)"));
+                tr("video files(*.avi *.mp4 *.wmv *.h265 *.mkv);All files(*.*)"));
     ui->fileName->setText(fileName);
 }
 
 
 void MainWindow::on_playButton_clicked()
 {
-
+    std::string fileName = ui->fileName->text().toStdString();
+    Player *player = new Player(fileName);
+    player->playing_running();
 }
 
