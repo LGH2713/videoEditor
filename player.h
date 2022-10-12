@@ -77,6 +77,10 @@ public:
     Player();
 
     int playing_running(const std::string p_input_file);
+    PlayerStat * player_init(const std::string p_input_file);
+    static int player_deinit(PlayerStat *is);
+    static void stream_toggle_pause(PlayerStat *is);
+    static void toggle_pause(PlayerStat *is);
 };
 
 #endif // PLAYER_H
