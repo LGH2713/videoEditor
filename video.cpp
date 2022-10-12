@@ -303,17 +303,39 @@ int Video::open_video_playing(void *arg)
         return -1;
     }
 
+    // 为AVFrame.*data[]手工分配缓冲区，用于储存sws_scale()中目的帧视频数据
     buf_size = av_image_get_buffer_size(AV_PIX_FMT_YUV420P,
                                         is->p_vcodec_ctx->width,
                                         is->p_vcodec_ctx->height,
                                         1);
 
+    // buffer将作为p_frm_yuv的视频数据缓冲区
     buffer = static_cast<uint8_t *>(av_malloc(buf_size));
     if(buffer == nullptr) {
         std::cout << "av_malloc() for buffer failed" <<std::endl;
         return -1;
     }
 
+    // 使用给定参数设定p_frm_yuv->data和p_frm_yuv->linesize
+
+    ret = av_image_fill_arrays(is->p_frm_yuv->data,
+                               is->p_frm_yuv->linesize,
+                               buffer,
+                               AV_PIX_FMT_YUV420P,
+                               is->p_vcodec_ctx->width,
+                               is->p_vcodec_ctx->height,
+                               1);
+    if(ret < 0) {
+        std::cout << "av_image_fill_arrays() failed " << ret << std::endl;
+        return -1;
+    }
+
+    // A2. 初始化SWS context，用于后续图像转换
+    //     此处第6个参数使用的是FFFmpeg中的像素格式
+    //     FFmpeg中的像素格式AV_PIX_FMT_YUV420P对应SDL中的像素格式是SDL_PIXELFORMAT_IYUV
+    //     如果解码后得到的图像不被SDL支持，不进行图像转换的话，SDL是无法正常显示图像的
+    //     如果解码后得到的图像能被SDL支持，则不必进行图像转换
+    //     这里为了编码方便，统一转换为SDL支持的格式AV_PIX_FMT_YUV420P ==> SDL_PIXELFORMAT_IYUV
     is->img_convert_ctx = sws_getContext(is->p_vcodec_ctx->width,
                                          is->p_vcodec_ctx->height,
                                          is->p_vcodec_ctx->pix_fmt,
@@ -336,14 +358,18 @@ int Video::open_video_playing(void *arg)
     is->sdl_video.rect.w = is->p_vcodec_ctx->width;
     is->sdl_video.rect.h = is->p_vcodec_ctx->height;
 
+    // 1. 创建SDL窗口，SDL2.0支持多窗口
+    //      SDL_Window即运行程序后弹出的视频窗口
     is->sdl_video.window = SDL_CreateWindow("simple ffplayer",
-                                            SDL_WINDOWPOS_UNDEFINED,
-                                            SDL_WINDOWPOS_UNDEFINED,
+                                            SDL_WINDOWPOS_UNDEFINED, // 不关心窗口的X坐标
+                                            SDL_WINDOWPOS_UNDEFINED, // 不关心窗口的Y坐标
                                             is->sdl_video.rect.w,
                                             is->sdl_video.rect.h,
                                             SDL_WINDOW_OPENGL
                                             );
 
+    // 2. 创建SDL_Renderer
+    //      SDL_Renderer: 渲染器
     if(is->sdl_video.window == nullptr) {
         std::cout << "SDL_CreateWindow() failed: " << SDL_GetError() << std::endl;
         return -1;
@@ -355,6 +381,8 @@ int Video::open_video_playing(void *arg)
         return -1;
     }
 
+    // 3. 创建SDL_Texture
+    //      一个SDL_Texture对应一帧YUV数据
     is->sdl_video.texture = SDL_CreateTexture(is->sdl_video.renderer,
                                               SDL_PIXELFORMAT_IYUV,
                                               SDL_TEXTUREACCESS_STREAMING,
@@ -374,5 +402,57 @@ int Video::open_video_playing(void *arg)
 
 int Video::open_video_stream(PlayerStat *is)
 {
+    AVCodecParameters *p_codec_par = nullptr;
+    AVCodec const* p_codec = nullptr;
+    AVCodecContext *p_codec_ctx = nullptr;
+    AVStream *p_stream = is->p_video_stream;
+    int ret;
 
+    // 1.为视频流构建解码器AVCodecContext
+    // 1.1获取解码器参数AVCodecParameters
+    p_codec_par = p_stream->codecpar;
+
+    // 1.2获取解码器
+    p_codec = avcodec_find_decoder(p_codec_par->codec_id);
+    if(p_codec == nullptr) {
+        std::cout << "Cann't find codec!" << std::endl;
+        return -1;
+    }
+
+    // 1.3构建解码器AVCodecContext
+    // 1.3.1 p_codec_ctx初始化：分配结构体，使用p_codec初始化相应成员为默认值
+    p_codec_ctx = avcodec_alloc_context3(p_codec);
+    if(p_codec_ctx == nullptr) {
+        std::cout << "avcodec_alloc_context3() failed" << std::endl;
+        return -1;
+    }
+
+    // 1.3.2 p_codec_ctx初始化：p_codec_par ==> p_codec_ctx，初始化相应成员
+    ret = avcodec_parameters_to_context(p_codec_ctx, p_codec_par);
+    if(ret < 0) {
+        std::cout << "avcodec_parameters_to_context() failed" << std::endl;
+        return -1;
+    }
+
+    // 1.3.3 p_codec_ctx初始化：使用p_codec初始化p_codec_ctx，初始化完成
+    ret = avcodec_open2(p_codec_ctx, p_codec, nullptr);
+    if(ret < 0) {
+        std::cout << "avcodec_open2() " << ret << std::endl;
+        return -1;
+    }
+
+    is->p_vcodec_ctx = p_codec_ctx;
+
+    // 2.创建视频解码线程
+    SDL_CreateThread(video_decode_thread, "video decode thread", is);
+
+    return 0;
+}
+
+int Video::open_video(PlayerStat *is)
+{
+    open_video_stream(is);
+    open_video_playing(is);
+
+    return 0;
 }
