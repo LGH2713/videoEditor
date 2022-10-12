@@ -47,7 +47,7 @@ void FrameQueue::frame_queue_destory(FrameQueue *f)
         av_frame_unref(vp->frame);
     }
     SDL_DestroyMutex(f->mutex);
-    SDL_DestroyCond(cond);
+    SDL_DestroyCond(f->cond);
 }
 
 void FrameQueue::frame_queue_signal(FrameQueue *f)

@@ -1,7 +1,8 @@
 #ifndef DEMUX_H
 #define DEMUX_H
 
-#include "player.h"
+#include "tool.h"
+#include "common.h"
 
 class Demux
 {
@@ -12,7 +13,7 @@ public:
     int demux_deinit();
     static int stream_has_enough_packets(AVStream *st, int stream_id, PacketQueue *queue);
     static int demux_thread(void *arg);
-    int open_demux(PlayerStat *is);
+    static int open_demux(PlayerStat *is);
     static int fail(AVFormatContext *ctx, int ret);
 };
 

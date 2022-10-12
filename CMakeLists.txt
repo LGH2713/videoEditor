@@ -36,6 +36,7 @@ set(PROJECT_SOURCES
         demux.h
         video.cpp
         video.h
+        common.h
     )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

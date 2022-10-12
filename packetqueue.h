@@ -1,19 +1,20 @@
 #ifndef PACKETQUEUE_H
 #define PACKETQUEUE_H
 
+#include "playerclock.h"
 #include "tool.h"
 
 class PacketQueue
 {
 public:
     PacketQueue();
-    int packet_queue_init(PacketQueue *q);
+    static int packet_queue_init(PacketQueue *q);
     static int packet_queue_put(PacketQueue *q, AVPacket *pkt);
     static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block);
     static int packet_queue_put_nullpacket(PacketQueue *q, int stream_index);
-    void packet_queue_flush(PacketQueue *q);
-    void packet_queue_destory(PacketQueue *q);
-    void  packet_queue_abort(PacketQueue *q);
+    static void packet_queue_flush(PacketQueue *q);
+    static void packet_queue_destory(PacketQueue *q);
+    static void  packet_queue_abort(PacketQueue *q);
 
     PacketList *first_pkt, *last_pkt;
     int nb_packets; // 队列中packet的数量

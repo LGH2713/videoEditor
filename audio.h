@@ -1,11 +1,8 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
-#include "tool.h"
-#include "packetqueue.h"
-#include "player.h"
-#include "playerclock.h"
-#include "framequeue.h".h"
+#include "common.h"
+#include "framequeue.h"
 
 class Audio
 {
@@ -18,13 +15,13 @@ public:
     // 音频解码线程，从音频packet_queue中取数据，解码后放入音频frame_queue
     static int audio_decode_thread(void *arg);
     // 打开音频流
-    int open_audio_stream(PlayerStat *is);
+    static int open_audio_stream(PlayerStat *is);
     // 音频重采样
     static int audio_resample(PlayerStat *is, int64_t audio_callback_time);
     // 播放音频
     static int open_audio_playing(void *arg);
     // 申请SDL音频缓冲区大小
-    int open_audio(PlayerStat *is);
+    static int open_audio(PlayerStat *is);
 };
 
 #endif // AUDIO_H

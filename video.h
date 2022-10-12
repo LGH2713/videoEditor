@@ -1,10 +1,8 @@
 #ifndef VIDEO_H
 #define VIDEO_H
 
-#include "player.h"
-#include "packetqueue.h"
+#include "common.h"
 #include "framequeue.h"
-#include "playerclock.h"
 
 class Video
 {
@@ -32,7 +30,7 @@ public:
     static int open_video_playing(void *arg);
     static int open_video_stream(PlayerStat *is);
 
-    int open_video(PlayerStat *is);
+    static int open_video(PlayerStat *is);
 };
 
 #endif // VIDEO_H
