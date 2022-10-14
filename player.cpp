@@ -1,27 +1,26 @@
 #include "player.h"
 
-Player::Player(std::string input_filename) : input_filename(input_filename)
+Player::Player(std::string input_filename) : input_filename(input_filename), is(nullptr), demux(nullptr),
+    video(nullptr), audio(nullptr)
 {
 
 }
 
 int Player::playing_running()
 {
-    PlayerStat *is = nullptr;
-
     if(!input_filename.c_str()) {
         return -1;
     }
 
-    is = player_init(input_filename.c_str());
+    player_init(input_filename.c_str());
     if(is == nullptr) {
         std::cout << "player init failed\n" << std::endl;
         do_exit(is);
     }
 
-    Demux::open_demux(is);
-    Video::open_video(is);
-    Audio::open_audio(is);
+    demux->open_demux(is);
+    video->open_video(is);
+    audio->open_audio(is);
 
     // 初始化队列事件
     SDL_Event event;
@@ -68,13 +67,11 @@ int Player::playing_running()
     return 0;
 }
 
-PlayerStat *Player::player_init(const char * p_input_file)
+void Player::player_init(const char * p_input_file)
 {
-    PlayerStat *is;
-
     is = static_cast<PlayerStat *>(av_mallocz(sizeof(PlayerStat)));
     if(!is) {
-        return nullptr;
+        return ;
     }
 
     is->fileName = av_strdup(p_input_file);
@@ -92,6 +89,16 @@ PlayerStat *Player::player_init(const char * p_input_file)
         player_deinit(is);
     }
 
+    AVPacket flush_pkt;
+    flush_pkt.data = nullptr;
+    PacketQueue::packet_queue_put(&is->video_pkt_queue, &flush_pkt);
+    PacketQueue::packet_queue_put(&is->audio_pkt_queue, &flush_pkt);
+
+    if(!(is->continue_read_thread = SDL_CreateCond())) {
+        av_log(nullptr, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError());
+        player_deinit(is);
+    }
+
     PlayerClock::init_clock(&is->video_clk, &is->video_pkt_queue.serial);
     PlayerClock::init_clock(&is->audio_clk, &is->audio_pkt_queue.serial);
 
@@ -102,12 +109,12 @@ PlayerStat *Player::player_init(const char * p_input_file)
         av_log(nullptr, AV_LOG_FATAL, "(Did you set the DISPLAY variable?)\n");
         exit(1);
     }
-
-    return is;
 }
 
 int Player::player_deinit(PlayerStat *is)
 {
+    std::cout << "player_deinit()" << std::endl;
+
     is->abort_request = 1;
     SDL_WaitThread(is->read_tid, nullptr);
 

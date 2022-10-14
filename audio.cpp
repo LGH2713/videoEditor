@@ -13,6 +13,7 @@ void Audio::sdl_audio_callback(void *opaque, Uint8 *stream, int len)
     int64_t audio_callback_time = av_gettime_relative();
     while(len > 0) //输入参数len等于is->audio_hw_buf_size，是audio_open()中申请到的SDL音频缓冲区大小
     {
+        std::cout << "audio callback" << std::endl;
         if(is->audio_cp_index >= static_cast<int>(is->audio_frm_size)) {
             // 1.从音频frame队列中取出一个frame，转换为音频设备支持格式，返回值是重采样音频帧的大小
             audio_size = audio_resample(is, audio_callback_time);
@@ -348,7 +349,7 @@ int Audio::open_audio_playing(void *arg)
     //      a. push，SDL以特定的频率调用回调函数，在回调函数中取得音频数据
     //      b. pull，用户程序以特定的的频率调用SDL_QueueAudio()，向音频设备提供数据。此种情况wanted_spec.callback = nullptr
     //2）音频设备打开后播放静音，不启动回调，调用SDL_Pause(0)后启动回调，开始正常播放音频
-    wanted_spec.samples = is->p_acodec_ctx->sample_rate;                // 采样率
+    wanted_spec.freq = is->p_acodec_ctx->sample_rate;                // 采样率
     wanted_spec.format = AUDIO_S16SYS;                                  // S代表符号，16是采样深度，sys代表采用系统字节序
     wanted_spec.channels = is->p_acodec_ctx->ch_layout.nb_channels;     // 声音通道数
     wanted_spec.silence = 0;                                            // 静音值
@@ -356,7 +357,10 @@ int Audio::open_audio_playing(void *arg)
     // SDL声音缓冲区尺寸，单位是单声道采样点尺寸x声道数
     wanted_spec.samples = FFMAX(SDL_AUDIO_MIN_BUFFER_SIZE, 2 << av_log2(wanted_spec.freq / SDL_AUDIO_MAX_CALLBACKS_PRE_SEC));
     wanted_spec.callback = sdl_audio_callback;                          // 回调函数，若为nullptr，则应使用SDL_QueueAudio()机制
-    wanted_spec.userdata = is;                                          // 提供回调函数需要的参数
+    wanted_spec.userdata = is;
+    // 提供回调函数需要的参数
+
+
     if(SDL_OpenAudio(&wanted_spec, &actual_spec) < 0) {
         av_log(nullptr, AV_LOG_ERROR, "SDL_OpenAudio() failed: %s\n", SDL_GetError());
         return -1;
@@ -388,6 +392,7 @@ int Audio::open_audio_playing(void *arg)
     //      在暂停期间，会将静音值往音频设备写
     SDL_PauseAudio(0);
 
+    return 0;
 }
 
 int Audio::open_audio(PlayerStat *is)

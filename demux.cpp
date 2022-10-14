@@ -68,6 +68,11 @@ int Demux::demux_init(PlayerStat *is)
         std::cout << "Cann't find any audio/video stream" << std::endl;
         fail(p_fmt_ctx, -1);
     }
+
+    is->audio_index = a_index;
+    is->video_index = v_index;
+    is->p_audio_stream = p_fmt_ctx->streams[a_index];
+    is->p_video_stream = p_fmt_ctx->streams[v_index];
     return 0;
 }
 
@@ -97,14 +102,25 @@ int Demux::demux_thread(void *arg)
 
     // 4.解复用处理
     while(1) {
+
+        std::cout << "demux callback" << std::endl;
+
         if(is->abort_request) {
+            std::cout << "demux abort" << std::endl;
             break;
         }
+
+        std::cout << "demux 1 ?: " << is->audio_pkt_queue.size + is->video_pkt_queue.size << std::endl;
+        std::cout << "demux 2 ?: " << stream_has_enough_packets(is->p_audio_stream, is->audio_index, &is->audio_pkt_queue) << std::endl;
+        std::cout << "demux 3 ?: " <<  stream_has_enough_packets(is->p_video_stream, is->video_index, &is->video_pkt_queue) << std::endl;
+
+
 
         if(is->audio_pkt_queue.size + is->video_pkt_queue.size > MAX_QUEUE_SIZE ||
                 (stream_has_enough_packets(is->p_audio_stream, is->audio_index, &is->audio_pkt_queue) &&
                  stream_has_enough_packets(is->p_video_stream, is->video_index, &is->video_pkt_queue)))
         {
+            std::cout << "demux lock" << std::endl;
             SDL_LockMutex(wait_mutex);
             SDL_CondWaitTimeout(is->continue_read_thread, wait_mutex, 10);
             SDL_UnlockMutex(wait_mutex);
@@ -114,6 +130,7 @@ int Demux::demux_thread(void *arg)
         // 4.1从输入文件读取一个packet
         ret = av_read_frame(is->p_fmt_ctx, pkt);
         if(ret < 0) {
+            std::cout << "put null packet in queue" << std::endl;
             if(ret == AVERROR_EOF) {
                 // 输入文件已读完，则往packet队列中发送NULL packet，以冲洗（flush）解码器，否则解码器中缓存的帧取不出来
                 if(is->video_index >= 0) {
@@ -123,23 +140,26 @@ int Demux::demux_thread(void *arg)
                     PacketQueue::packet_queue_put_nullpacket(&is->audio_pkt_queue, is->audio_index);
                 }
             }
+
+            SDL_LockMutex(wait_mutex);
+            SDL_CondWaitTimeout(is->continue_read_thread, wait_mutex, 10);
+            SDL_UnlockMutex(wait_mutex);
+            continue;
         }
 
-        SDL_LockMutex(wait_mutex);
-        SDL_CondWaitTimeout(is->continue_read_thread, wait_mutex, 10);
-        SDL_UnlockMutex(wait_mutex);
-        continue;
-    }
+        // 4.3根据当前packet类型（音频、视频、字幕），将其存入对应的packet队列
+        if(pkt->stream_index == is->audio_index) {
+            std::cout << "put audio packet in queue" << std::endl;
+            PacketQueue::packet_queue_put(&is->audio_pkt_queue, pkt);
+        }
+        else if(pkt->stream_index == is->video_index) {
+            std::cout << "put video packet in queue" << std::endl;
+            PacketQueue::packet_queue_put(&is->video_pkt_queue, pkt);
+        }
+        else {
+            av_packet_unref(pkt);
+        }
 
-    // 4.3根据当前packet类型（音频、视频、字幕），将其存入对应的packet队列
-    if(pkt->stream_index == is->audio_index) {
-        PacketQueue::packet_queue_put(&is->audio_pkt_queue, pkt);
-    }
-    else if(pkt->stream_index == is->video_index) {
-        PacketQueue::packet_queue_put(&is->video_pkt_queue, pkt);
-    }
-    else {
-        av_packet_unref(pkt);
     }
 
     ret = 0;

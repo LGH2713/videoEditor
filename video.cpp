@@ -218,35 +218,44 @@ void Video::video_refresh(void *opaque, double *remaining_time)
     static bool first_frame = true;
 
     while(1) {
-        if(FrameQueue::frame_queue_nb_remaining(&is->video_frm_queue) == 0) {
+        std::cout << "video refresh" << std::endl;
+        if(FrameQueue::frame_queue_nb_remaining(&is->video_frm_queue) == 0) // 所有帧已显示
+        {
             return ;
         }
 
         double last_duration, duration, delay;
         Frame *vp, *lastvp;
 
-        lastvp = FrameQueue::frame_queue_peek_last(&is->video_frm_queue);
-        vp = FrameQueue::frame_queue_peek(&is->video_frm_queue);
+        lastvp = FrameQueue::frame_queue_peek_last(&is->video_frm_queue); // 上一帧：上次显示的帧
+        vp = FrameQueue::frame_queue_peek(&is->video_frm_queue);          // 当前帧：当前待显示的帧
 
+        // lastvp和vp不是同一播放序列（一个seek会开始一个新播放序列），将frame_timer更新为当前时间
         if(first_frame) {
             is->frame_timer = av_gettime_relative() / 1000000.0;
             first_frame = false;
         }
 
+        // 暂停处理：不停播放上一帧
         if(is->paused) {
             video_display(is);
         }
 
-        last_duration = vp_duration(is, lastvp, vp);
-        delay = compute_target_delay(last_duration, is);
+        last_duration = vp_duration(is, lastvp, vp);        // 上一帧播放时长：vp->pts - lastvp->pts
+        delay = compute_target_delay(last_duration, is);    // 根据视频时钟和同步时钟的差值，计算delay值
 
         time = av_gettime_relative() / 1000000.0;
+        // 当前帧播放时刻（is->frame_timer + delay）大于当前时刻（time），表示播放时刻未到
         if(time < is->frame_timer + delay) {
+            // 播放时刻未到，则更新刷新时间remaining_time为当前时刻到下一播放时刻的时间差
             *remaining_time = FFMIN(is->frame_timer + delay - time, *remaining_time);
+            // 播放时刻未到，则不播放，直接返回
             return;
         }
 
+        // 更新frame_timer值
         is->frame_timer += delay;
+        // 校正frame_timer值：若frame_timer落后于当前系统时间太久（超过最大同步域值），则更新为当前系统时间
         if(delay > 0 && time - is->frame_timer > AV_SYNC_THRESHOLD_MAX) {
             is->frame_timer = time;
         }
@@ -395,6 +404,8 @@ int Video::open_video_playing(void *arg)
         return -1;
     }
 
+    std::cout << "create window renderer texture" << std::endl;
+
     SDL_CreateThread(video_playing_thread, "video playing thread", is);
 
     return 0;
@@ -418,6 +429,8 @@ int Video::open_video_stream(PlayerStat *is)
         std::cout << "Cann't find codec!" << std::endl;
         return -1;
     }
+
+     std::cout << "find codec!" << std::endl;
 
     // 1.3构建解码器AVCodecContext
     // 1.3.1 p_codec_ctx初始化：分配结构体，使用p_codec初始化相应成员为默认值
