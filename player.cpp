@@ -25,7 +25,8 @@ int Player::playing_running()
     // 初始化队列事件
     SDL_Event event;
 
-    while(1) {
+    while(1)
+    {
         // 在设置视频模式的线程执行
         // 泵送事件回路，从输入设备收集事件。更新事件队列的内部输入设备状态
         SDL_PumpEvents();
@@ -37,14 +38,17 @@ int Player::playing_running()
             SDL_PumpEvents();
         }
 
-        switch(event.type) {
+        switch(event.type)
+        {
         case SDL_KEYDOWN:
-            if(event.key.keysym.sym == SDLK_ESCAPE) {
+            if(event.key.keysym.sym == SDLK_ESCAPE)
+            {
                 do_exit(is);
                 break;
             }
 
-            switch(event.key.keysym.sym) {
+            switch(event.key.keysym.sym)
+            {
             case SDLK_SPACE:
                 toggle_pause(is);
                 break;
@@ -104,7 +108,8 @@ void Player::player_init(const char * p_input_file)
 
     is->abort_request = 0;
 
-    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER)) {
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER))
+    {
         av_log(nullptr, AV_LOG_FATAL, "Cann't initialize SDL - %s\n", SDL_GetError());
         av_log(nullptr, AV_LOG_FATAL, "(Did you set the DISPLAY variable?)\n");
         exit(1);
@@ -118,12 +123,12 @@ int Player::player_deinit(PlayerStat *is)
     is->abort_request = 1;
     SDL_WaitThread(is->read_tid, nullptr);
 
-    if(is->audio_index >= 0) {
+//    if(is->audio_index >= 0) {
 
-    }
-    if(is->video_index >= 0) {
+//    }
+//    if(is->video_index >= 0) {
 
-    }
+//    }
 
     avformat_close_input(&is->p_fmt_ctx);
 
@@ -132,6 +137,7 @@ int Player::player_deinit(PlayerStat *is)
     PacketQueue::packet_queue_destory(&is->video_pkt_queue);
     PacketQueue::packet_queue_destory(&is->audio_pkt_queue);
 
+    // 释放所有图像内存
     FrameQueue::frame_queue_destory(&is->video_frm_queue);
     FrameQueue::frame_queue_destory(&is->audio_frm_queue);
 

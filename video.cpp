@@ -43,21 +43,27 @@ int Video::video_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
             //      frame输出顺序是按pts的顺序，如IBBPBBBP
             //      frame->pst_pos变量是此frame对应的packet在视频文件中的偏移地址，值同pkt.pos
             ret = avcodec_receive_frame(p_codec_ctx, frame);
-            if(ret < 0) {
-                if(ret == AVERROR_EOF) {
+            if(ret < 0)
+            {
+                if(ret == AVERROR_EOF)
+                {
                     av_log(nullptr, AV_LOG_INFO, "video avcodec_receive_frame(): the decoder has been fully flushed\n");
                     avcodec_flush_buffers(p_codec_ctx);
+                    return 0;
                 }
-                else if(ret == AVERROR(EAGAIN)) {
+                else if(ret == AVERROR(EAGAIN))
+                {
                     av_log(nullptr, AV_LOG_INFO, "video avcodec_receive_frame(): output is not available in this state - user must try to send new input\n");
                     break;
                 }
-                else {
+                else
+                {
                     av_log(nullptr, AV_LOG_ERROR, "video avcodec_receive_frame(): other errors\n");
                     continue;
                 }
             }
-            else {
+            else
+            {
                 frame->pts = frame->best_effort_timestamp;
 
                 return 1; // 成功解码一个视频帧或音频帧则返回
@@ -65,18 +71,21 @@ int Video::video_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
         }
 
         // 1.取出一个packet。使用pkt对应的serial赋值给d->pkt_serial
-        if(PacketQueue::packet_queue_get(p_pkt_queue, &pkt, true) < 0) {
+        if(PacketQueue::packet_queue_get(p_pkt_queue, &pkt, true) < 0)
+        {
             return -1;
         }
 
-        if(pkt.data == nullptr) {
+        if(pkt.data == nullptr)
+        {
             avcodec_flush_buffers(p_codec_ctx);
         }
         else {
             // 2.将packet发送给解码器
             //      发送packet的顺序是按dts递增的顺序，如IPBBPBB
             //      pkt,pos变量可以标识当前packet在视频文件中的地址偏移
-            if(avcodec_send_packet(p_codec_ctx, &pkt) == AVERROR(EAGAIN)) {
+            if(avcodec_send_packet(p_codec_ctx, &pkt) == AVERROR(EAGAIN))
+            {
                 av_log(nullptr, AV_LOG_ERROR, "receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
             }
 
@@ -96,12 +105,14 @@ int Video::video_decode_thread(void *arg)
     AVRational tb = is->p_video_stream->time_base;
     AVRational frame_rate = av_guess_frame_rate(is->p_fmt_ctx, is->p_video_stream, nullptr);
 
-    if(p_frame == nullptr) {
+    if(p_frame == nullptr)
+    {
         av_log(nullptr, AV_LOG_ERROR, "av_frame_alloc() for p_frame failed\n");
         return AVERROR(ENOMEM);
     }
 
-    while(1) {
+    while(1)
+    {
         got_picture = video_decode_frame(is->p_vcodec_ctx, &is->video_pkt_queue, p_frame);
         if(got_picture < 0) {
             av_frame_unref(p_frame);
@@ -149,14 +160,16 @@ double Video::compute_target_delay(double delay, PlayerStat *is)
 
 double Video::vp_duration(PlayerStat *is, Frame *vp, Frame *nextvp)
 {
-    if(vp->serial == nextvp->serial) {
+    if(vp->serial == nextvp->serial)
+    {
         double duration = nextvp->pts - vp->pts;
         if(isnan(duration) || duration <= 0)
             return vp->duration;
         else
             return duration;
     }
-    else {
+    else
+    {
         return 0.0;
     }
 }
@@ -231,7 +244,8 @@ void Video::video_refresh(void *opaque, double *remaining_time)
         vp = FrameQueue::frame_queue_peek(&is->video_frm_queue);          // 当前帧：当前待显示的帧
 
         // lastvp和vp不是同一播放序列（一个seek会开始一个新播放序列），将frame_timer更新为当前时间
-        if(first_frame) {
+        if(first_frame)
+        {
             is->frame_timer = av_gettime_relative() / 1000000.0;
             first_frame = false;
         }
@@ -246,7 +260,8 @@ void Video::video_refresh(void *opaque, double *remaining_time)
 
         time = av_gettime_relative() / 1000000.0;
         // 当前帧播放时刻（is->frame_timer + delay）大于当前时刻（time），表示播放时刻未到
-        if(time < is->frame_timer + delay) {
+        if(time < is->frame_timer + delay)
+        {
             // 播放时刻未到，则更新刷新时间remaining_time为当前时刻到下一播放时刻的时间差
             *remaining_time = FFMIN(is->frame_timer + delay - time, *remaining_time);
             // 播放时刻未到，则不播放，直接返回
@@ -256,12 +271,14 @@ void Video::video_refresh(void *opaque, double *remaining_time)
         // 更新frame_timer值
         is->frame_timer += delay;
         // 校正frame_timer值：若frame_timer落后于当前系统时间太久（超过最大同步域值），则更新为当前系统时间
-        if(delay > 0 && time - is->frame_timer > AV_SYNC_THRESHOLD_MAX) {
+        if(delay > 0 && time - is->frame_timer > AV_SYNC_THRESHOLD_MAX)
+        {
             is->frame_timer = time;
         }
 
         SDL_LockMutex(is->video_frm_queue.mutex);
-        if(!isnan(vp->pts)) {
+        if(!isnan(vp->pts))
+        {
             update_video_pts(is, vp->pts, vp->pos, vp->serial); // 更新视频时钟：时间戳、时钟时间
         }
         SDL_UnlockMutex(is->video_frm_queue.mutex);
@@ -280,6 +297,8 @@ void Video::video_refresh(void *opaque, double *remaining_time)
 
         // 删除当前读指针元素，读指针+1.若未丢帧，则读指针从lastvp更新到vp；若有丢帧，读指针从vp更新到nextvp
         FrameQueue::frame_queue_next(&is->video_frm_queue);
+
+        video_display(is);
     }
 }
 
@@ -288,8 +307,10 @@ int Video::video_playing_thread(void *arg)
     PlayerStat *is = static_cast<PlayerStat *>(arg);
     double remaining_time = 0.0;
 
-    while(1) {
-        if(remaining_time > 0.0) {
+    while(1)
+    {
+        if(remaining_time > 0.0)
+        {
             av_usleep(static_cast<unsigned>(remaining_time * 1000000.0));
         }
         remaining_time = REFRESH_RATE;
@@ -307,7 +328,8 @@ int Video::open_video_playing(void *arg)
     uint8_t *buffer = nullptr;
 
     is->p_frm_yuv = av_frame_alloc();
-    if(is->p_frm_yuv == nullptr) {
+    if(is->p_frm_yuv == nullptr)
+    {
         std::cout << "av_frame_alloc() for p_frm_raw failed\n" << std::endl;
         return -1;
     }
@@ -320,7 +342,8 @@ int Video::open_video_playing(void *arg)
 
     // buffer将作为p_frm_yuv的视频数据缓冲区
     buffer = static_cast<uint8_t *>(av_malloc(buf_size));
-    if(buffer == nullptr) {
+    if(buffer == nullptr)
+    {
         std::cout << "av_malloc() for buffer failed" <<std::endl;
         return -1;
     }
@@ -334,7 +357,8 @@ int Video::open_video_playing(void *arg)
                                is->p_vcodec_ctx->width,
                                is->p_vcodec_ctx->height,
                                1);
-    if(ret < 0) {
+    if(ret < 0)
+    {
         std::cout << "av_image_fill_arrays() failed " << ret << std::endl;
         return -1;
     }
@@ -357,7 +381,8 @@ int Video::open_video_playing(void *arg)
                                          nullptr
                                          );
 
-    if(is->img_convert_ctx == nullptr) {
+    if(is->img_convert_ctx == nullptr)
+    {
         std::cout << "sws_getContext() failed" << std::endl;
         return -1;
     }
@@ -379,13 +404,15 @@ int Video::open_video_playing(void *arg)
 
     // 2. 创建SDL_Renderer
     //      SDL_Renderer: 渲染器
-    if(is->sdl_video.window == nullptr) {
+    if(is->sdl_video.window == nullptr)
+    {
         std::cout << "SDL_CreateWindow() failed: " << SDL_GetError() << std::endl;
         return -1;
     }
 
     is->sdl_video.renderer = SDL_CreateRenderer(is->sdl_video.window, -1, 0);
-    if(is->sdl_video.renderer == nullptr) {
+    if(is->sdl_video.renderer == nullptr)
+    {
         std::cout << "SDL_CreateRenderer() failed: " << SDL_GetError() << std::endl;
         return -1;
     }
@@ -399,7 +426,8 @@ int Video::open_video_playing(void *arg)
                                               is->sdl_video.rect.h
                                               );
 
-    if(is->sdl_video.texture == nullptr) {
+    if(is->sdl_video.texture == nullptr)
+    {
         std::cout << "SDL_CreateTexture() failed: " << SDL_GetError() << std::endl;
         return -1;
     }
@@ -425,7 +453,8 @@ int Video::open_video_stream(PlayerStat *is)
 
     // 1.2获取解码器
     p_codec = avcodec_find_decoder(p_codec_par->codec_id);
-    if(p_codec == nullptr) {
+    if(p_codec == nullptr)
+    {
         std::cout << "Cann't find codec!" << std::endl;
         return -1;
     }
@@ -435,14 +464,16 @@ int Video::open_video_stream(PlayerStat *is)
     // 1.3构建解码器AVCodecContext
     // 1.3.1 p_codec_ctx初始化：分配结构体，使用p_codec初始化相应成员为默认值
     p_codec_ctx = avcodec_alloc_context3(p_codec);
-    if(p_codec_ctx == nullptr) {
+    if(p_codec_ctx == nullptr)
+    {
         std::cout << "avcodec_alloc_context3() failed" << std::endl;
         return -1;
     }
 
     // 1.3.2 p_codec_ctx初始化：p_codec_par ==> p_codec_ctx，初始化相应成员
     ret = avcodec_parameters_to_context(p_codec_ctx, p_codec_par);
-    if(ret < 0) {
+    if(ret < 0)
+    {
         std::cout << "avcodec_parameters_to_context() failed" << std::endl;
         return -1;
     }

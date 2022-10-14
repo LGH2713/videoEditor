@@ -27,7 +27,8 @@ int PacketQueue::packet_queue_put(PacketQueue *q, AVPacket *pkt)
 {
     PacketList *pkt_list;
 
-    if(av_packet_make_refcounted(pkt) < 0) {
+    if(av_packet_make_refcounted(pkt) < 0) // 确保给定数据包所描述的数据被引用计数。
+    {
         std::cout << "[pkt] is not refrence counted" << std::endl;
         return -1;
     }

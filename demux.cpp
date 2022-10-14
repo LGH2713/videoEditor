@@ -49,14 +49,16 @@ int Demux::demux_init(PlayerStat *is)
     // 2. 查找第一个音频流/视频流
     a_index = -1;
     v_index = -1;
-    for(int i = 0; i < static_cast<int>(p_fmt_ctx->nb_streams); ++i) {
+    for(int i = 0; i < static_cast<int>(p_fmt_ctx->nb_streams); i++) {
         if((p_fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) &&
-                (a_index == -1)) {
+                (a_index == -1))
+        {
             a_index = i;
             std::cout << "Find an audio stream, index " << a_index << std::endl;
         }
         if((p_fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
-                (v_index == -1)) {
+                (v_index == -1))
+        {
             v_index = i;
             std::cout << "Find a video stream, index " << v_index << std::endl;
         }
@@ -115,7 +117,7 @@ int Demux::demux_thread(void *arg)
         std::cout << "demux 3 ?: " <<  stream_has_enough_packets(is->p_video_stream, is->video_index, &is->video_pkt_queue) << std::endl;
 
 
-
+        // 如果包队列数据已满，则不需要继续读
         if(is->audio_pkt_queue.size + is->video_pkt_queue.size > MAX_QUEUE_SIZE ||
                 (stream_has_enough_packets(is->p_audio_stream, is->audio_index, &is->audio_pkt_queue) &&
                  stream_has_enough_packets(is->p_video_stream, is->video_index, &is->video_pkt_queue)))
@@ -129,14 +131,18 @@ int Demux::demux_thread(void *arg)
 
         // 4.1从输入文件读取一个packet
         ret = av_read_frame(is->p_fmt_ctx, pkt);
-        if(ret < 0) {
+        if(ret < 0)
+        {
             std::cout << "put null packet in queue" << std::endl;
-            if(ret == AVERROR_EOF) {
+            if(ret == AVERROR_EOF)
+            {
                 // 输入文件已读完，则往packet队列中发送NULL packet，以冲洗（flush）解码器，否则解码器中缓存的帧取不出来
-                if(is->video_index >= 0) {
+                if(is->video_index >= 0)
+                {
                     PacketQueue::packet_queue_put_nullpacket(&is->video_pkt_queue, is->video_index);
                 }
-                if(is->audio_index >= 0) {
+                if(is->audio_index >= 0)
+                {
                     PacketQueue::packet_queue_put_nullpacket(&is->audio_pkt_queue, is->audio_index);
                 }
             }
@@ -148,15 +154,18 @@ int Demux::demux_thread(void *arg)
         }
 
         // 4.3根据当前packet类型（音频、视频、字幕），将其存入对应的packet队列
-        if(pkt->stream_index == is->audio_index) {
+        if(pkt->stream_index == is->audio_index)
+        {
             std::cout << "put audio packet in queue" << std::endl;
             PacketQueue::packet_queue_put(&is->audio_pkt_queue, pkt);
         }
-        else if(pkt->stream_index == is->video_index) {
+        else if(pkt->stream_index == is->video_index)
+        {
             std::cout << "put video packet in queue" << std::endl;
             PacketQueue::packet_queue_put(&is->video_pkt_queue, pkt);
         }
-        else {
+        else
+        {
             av_packet_unref(pkt);
         }
 
@@ -176,13 +185,15 @@ int Demux::demux_thread(void *arg)
 
 int Demux::open_demux(PlayerStat *is)
 {
-    if(demux_init(is) != 0) {
+    if(demux_init(is) != 0)
+    {
         std::cout << "demux_init() failed" << std::endl;
         return -1;
     }
 
     is->read_tid = SDL_CreateThread(demux_thread, "demux_thread", is);
-    if(is->read_tid == nullptr) {
+    if(is->read_tid == nullptr)
+    {
         std::cout << "SDL_CreateThread() failed " << SDL_GetError() << std::endl;
         return -1;
     }

@@ -17,11 +17,13 @@ int FrameQueue::frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size,
     // 创建SDL互斥锁
     if(!(f->mutex = SDL_CreateMutex())) {
         av_log(nullptr, AV_LOG_FATAL, "SDL_CreateMutex(): %s\n", SDL_GetError());
+        return AVERROR(ENOMEM);
     }
 
     // 创建条件变量
     if(!(f->cond = SDL_CreateCond())) {
         av_log(nullptr, AV_LOG_FATAL, "SDL_CreateCond(): %s\n", SDL_GetError());
+        return AVERROR(ENOMEM);
     }
 
     // 设置帧队列初始化属性
