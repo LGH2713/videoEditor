@@ -46,16 +46,7 @@ void MainWindow::on_playButton_clicked()
     player->video->open_video_stream(player->is); // 开启视频流
     player->audio->open_audio_stream(player->is); // 开启音频流
 
-    player->video->open_video_playing(player->is); // 开启视频播放open_video_playing(is); // 开启视频播放
-    // 1. 创建SDL窗口，SDL2.0支持多窗口
-    //      SDL_Window即运行程序后弹出的视频窗口
-//    player->is->sdl_video.window = SDL_CreateWindow("simple ffplayer",
-//                                            SDL_WINDOWPOS_UNDEFINED, // 不关心窗口的X坐标
-//                                            SDL_WINDOWPOS_UNDEFINED, // 不关心窗口的Y坐标
-//                                            player->is->sdl_video.rect.w,
-//                                            player->is->sdl_video.rect.h,
-//                                            SDL_WINDOW_OPENGL
-//                                            );
+    player->video->open_video_playing(player->is); // 开启视频播放
 
     player->is->sdl_video.window = SDL_CreateWindowFrom((void *)ui->player->winId());
 

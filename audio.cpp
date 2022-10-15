@@ -73,8 +73,6 @@ int Audio::audio_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
     {
         AVPacket pkt;
 
-        std::cout << "audio decode frame" << std::endl;
-
         while(1)
         {
             // 一个音频packet含有一或多个音频frame，每次avcodec_receive_frame()返回一个frame，此函数返回

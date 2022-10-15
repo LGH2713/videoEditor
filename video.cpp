@@ -36,11 +36,9 @@ int Video::video_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
 
     while(1)
     {
-        std::cout << "video_decode_frame first loop" << std::endl;
         AVPacket pkt;
         while(1)
         {
-            std::cout << "video_decode_frame second loop" << std::endl;
             // 3.从解码器接收frame
             // 3.1 一个视频packet含一个视频frame
             //      解码器缓存一定数量的packet后，才有解码后的frame输出
@@ -94,8 +92,6 @@ int Video::video_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
             {
                 av_log(nullptr, AV_LOG_ERROR, "receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
             }
-
-            std::cout << "send packet" << std::endl;
 
             av_packet_unref(&pkt);
         }
@@ -352,9 +348,8 @@ int Video::video_playing_thread(void *arg)
 // 1. 创建视频窗口
 // 2. 对解析出的视频帧进行格式转换
 // 3. 开启视频播放帧
-int Video::open_video_playing(void *arg)
+int Video::open_video_playing(PlayerStat *is)
 {
-    PlayerStat *is = static_cast<PlayerStat *>(arg);
     int ret;
     int buf_size;
     uint8_t *buffer = nullptr;

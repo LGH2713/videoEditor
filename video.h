@@ -27,7 +27,7 @@ public:
     // 调用后显示每一帧
     static void video_refresh(void *opaque, double *remaining_time);
     static int video_playing_thread(void *arg);
-    static int open_video_playing(void *arg);
+    static int open_video_playing(PlayerStat *is);
     static int open_video_stream(PlayerStat *is);
 };
 
