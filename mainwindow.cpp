@@ -40,9 +40,10 @@ void MainWindow::on_playButton_clicked()
     player->video->open_video_stream(player->is); // 开启视频流
     player->audio->open_audio_stream(player->is); // 开启音频流
 
+    /*视频播放代码*/
     player->video->open_video_playing(player->is, ui->player->width(), ui->player->height()); // 开启视频播放
 
-    player->is->sdl_video.window = SDL_CreateWindowFrom((void *)ui->player->winId());
+    player->is->sdl_video.window = SDL_CreateWindowFrom((void *)ui->player->winId()); // 将SDL窗口嵌入qt
 
     // 2. 创建SDL_Renderer
     //      SDL_Renderer: 渲染器
@@ -77,6 +78,7 @@ void MainWindow::on_playButton_clicked()
     SDL_CreateThread(player->video->video_playing_thread, "video playing thread", player->is);
 
 
+    /*音频播放代码*/
     player->audio->open_audio_playing(player->is); // 开启音频播放
 
     player->playing_running();

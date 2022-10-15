@@ -120,7 +120,8 @@ void FrameQueue::frame_queue_push(FrameQueue *f)
 //读指针（rindex）指向的帧已显示，删除此帧，注意不读取直接删除。读指针+1
 void FrameQueue::frame_queue_next(FrameQueue *f)
 {
-    if(f->keep_last && !f->rindex_shown) {
+    if(f->keep_last && !f->rindex_shown)
+    {
         f->rindex_shown = 1;
         return ;
     }
