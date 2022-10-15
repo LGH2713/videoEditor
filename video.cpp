@@ -424,48 +424,6 @@ int Video::open_video_playing(void *arg)
     is->sdl_video.rect.w = is->p_vcodec_ctx->width;
     is->sdl_video.rect.h = is->p_vcodec_ctx->height;
 
-    // 1. 创建SDL窗口，SDL2.0支持多窗口
-    //      SDL_Window即运行程序后弹出的视频窗口
-    is->sdl_video.window = SDL_CreateWindow("simple ffplayer",
-                                            SDL_WINDOWPOS_UNDEFINED, // 不关心窗口的X坐标
-                                            SDL_WINDOWPOS_UNDEFINED, // 不关心窗口的Y坐标
-                                            is->sdl_video.rect.w,
-                                            is->sdl_video.rect.h,
-                                            SDL_WINDOW_OPENGL
-                                            );
-
-    // 2. 创建SDL_Renderer
-    //      SDL_Renderer: 渲染器
-    if(is->sdl_video.window == nullptr)
-    {
-        std::cout << "SDL_CreateWindow() failed: " << SDL_GetError() << std::endl;
-        return -1;
-    }
-
-    is->sdl_video.renderer = SDL_CreateRenderer(is->sdl_video.window, -1, 0);
-    if(is->sdl_video.renderer == nullptr)
-    {
-        std::cout << "SDL_CreateRenderer() failed: " << SDL_GetError() << std::endl;
-        return -1;
-    }
-
-    // 3. 创建SDL_Texture
-    //      一个SDL_Texture对应一帧YUV数据
-    is->sdl_video.texture = SDL_CreateTexture(is->sdl_video.renderer,
-                                              SDL_PIXELFORMAT_IYUV,
-                                              SDL_TEXTUREACCESS_STREAMING,
-                                              is->sdl_video.rect.w,
-                                              is->sdl_video.rect.h
-                                              );
-
-    if(is->sdl_video.texture == nullptr)
-    {
-        std::cout << "SDL_CreateTexture() failed: " << SDL_GetError() << std::endl;
-        return -1;
-    }
-
-    SDL_CreateThread(video_playing_thread, "video playing thread", is);
-
     return 0;
 }
 
@@ -527,10 +485,4 @@ int Video::open_video_stream(PlayerStat *is)
     return 0;
 }
 
-int Video::open_video(PlayerStat *is)
-{
-    open_video_stream(is); // 开启视频流
-    open_video_playing(is); // 开启视频播放
 
-    return 0;
-}

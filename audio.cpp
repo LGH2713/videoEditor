@@ -431,11 +431,3 @@ int Audio::open_audio_playing(void *arg)
 
     return 0;
 }
-
-int Audio::open_audio(PlayerStat *is)
-{
-    open_audio_stream(is);
-    open_audio_playing(is);
-
-    return 0;
-}

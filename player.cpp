@@ -8,22 +8,6 @@ Player::Player(std::string input_filename) : input_filename(input_filename), is(
 
 int Player::playing_running()
 {
-    if(!input_filename.c_str())
-    {
-        return -1;
-    }
-
-    player_init(input_filename.c_str());
-    if(is == nullptr)
-    {
-        std::cout << "player init failed\n" << std::endl;
-        do_exit(is);
-    }
-
-    demux->open_demux(is); // 开启解复用线程
-    video->open_video(is); // 开启视频线程
-    audio->open_audio(is); // 开启音频线程
-
     // 初始化队列事件
     SDL_Event event;
 
@@ -77,7 +61,7 @@ int Player::playing_running()
 
 void Player::player_init(const char * p_input_file)
 {
-//    为全局音视频播放结构体分派内存（需要做类型转换）
+    // 为全局音视频播放结构体分派内存（需要做类型转换）
     is = static_cast<PlayerStat *>(av_mallocz(sizeof(PlayerStat)));
     if(!is) // 分配失败则直接返回
     {

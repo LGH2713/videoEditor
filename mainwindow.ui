@@ -73,7 +73,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>TextLabel</string>
+     <string>player</string>
     </property>
    </widget>
   </widget>

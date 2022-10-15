@@ -29,8 +29,6 @@ public:
     static int video_playing_thread(void *arg);
     static int open_video_playing(void *arg);
     static int open_video_stream(PlayerStat *is);
-
-    static int open_video(PlayerStat *is);
 };
 
 #endif // VIDEO_H

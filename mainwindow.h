@@ -23,7 +23,7 @@ private slots:
 
     void on_playButton_clicked();
 
-private:
+public:
     Ui::MainWindow *ui;
 };
 #endif // MAINWINDOW_H

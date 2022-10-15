@@ -22,7 +22,7 @@ public:
     static void toggle_pause(PlayerStat *is);
     static void do_exit(PlayerStat *is);
 
-private:
+public:
     std::string input_filename;
     PlayerStat *is;
     Demux *demux;

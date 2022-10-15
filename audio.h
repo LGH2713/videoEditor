@@ -20,8 +20,6 @@ public:
     static int audio_resample(PlayerStat *is, int64_t audio_callback_time);
     // 播放音频
     static int open_audio_playing(void *arg);
-    // 申请SDL音频缓冲区大小
-    static int open_audio(PlayerStat *is);
 };
 
 #endif // AUDIO_H

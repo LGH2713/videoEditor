@@ -21,7 +21,7 @@ public:
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
-    SDL_Rect rect;
+    SDL_Rect rect; // 一个矩形原点在左上角
 };
 
 class PlayerStat {
