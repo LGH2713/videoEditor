@@ -34,9 +34,13 @@ int Video::video_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
 {
     int ret;
 
-    while(1) {
+    while(1)
+    {
+        std::cout << "video_decode_frame first loop" << std::endl;
         AVPacket pkt;
-        while(1) {
+        while(1)
+        {
+            std::cout << "video_decode_frame second loop" << std::endl;
             // 3.从解码器接收frame
             // 3.1 一个视频packet含一个视频frame
             //      解码器缓存一定数量的packet后，才有解码后的frame输出
@@ -48,7 +52,7 @@ int Video::video_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
                 if(ret == AVERROR_EOF)
                 {
                     av_log(nullptr, AV_LOG_INFO, "video avcodec_receive_frame(): the decoder has been fully flushed\n");
-                    avcodec_flush_buffers(p_codec_ctx);
+                    avcodec_flush_buffers(p_codec_ctx); // 重置内部编解码器状态/刷新内部缓冲区
                     return 0;
                 }
                 else if(ret == AVERROR(EAGAIN))
@@ -64,7 +68,7 @@ int Video::video_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
             }
             else
             {
-                frame->pts = frame->best_effort_timestamp;
+                frame->pts = frame->best_effort_timestamp; // 帧时间戳估计使用各种启发式，在流时间基
 
                 return 1; // 成功解码一个视频帧或音频帧则返回
             }
@@ -76,11 +80,13 @@ int Video::video_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
             return -1;
         }
 
-        if(pkt.data == nullptr)
+        if(pkt.data == nullptr) // 取出的数据包数据不为空
         {
-            avcodec_flush_buffers(p_codec_ctx);
+            std::cout << "video_decode_frame flush buffer" << std::endl;
+            avcodec_flush_buffers(p_codec_ctx); // 重置内部编解码器状态/刷新内部缓冲区
         }
-        else {
+        else
+        {
             // 2.将packet发送给解码器
             //      发送packet的顺序是按dts递增的顺序，如IPBBPBB
             //      pkt,pos变量可以标识当前packet在视频文件中的地址偏移
@@ -88,6 +94,8 @@ int Video::video_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
             {
                 av_log(nullptr, AV_LOG_ERROR, "receive_frame and send_packet both returned EAGAIN, which is an API violation.\n");
             }
+
+            std::cout << "send packet" << std::endl;
 
             av_packet_unref(&pkt);
         }
@@ -105,7 +113,7 @@ int Video::video_decode_thread(void *arg)
     AVRational tb = is->p_video_stream->time_base;
     AVRational frame_rate = av_guess_frame_rate(is->p_fmt_ctx, is->p_video_stream, nullptr);
 
-    if(p_frame == nullptr)
+    if(p_frame == nullptr) // 帧分配空间失败
     {
         av_log(nullptr, AV_LOG_ERROR, "av_frame_alloc() for p_frame failed\n");
         return AVERROR(ENOMEM);
@@ -113,8 +121,9 @@ int Video::video_decode_thread(void *arg)
 
     while(1)
     {
-        got_picture = video_decode_frame(is->p_vcodec_ctx, &is->video_pkt_queue, p_frame);
-        if(got_picture < 0) {
+        got_picture = video_decode_frame(is->p_vcodec_ctx, &is->video_pkt_queue, p_frame); // 解析视频帧
+        if(got_picture < 0)
+        {
             av_frame_unref(p_frame);
             return 0;
         }
@@ -124,16 +133,19 @@ int Video::video_decode_thread(void *arg)
         ret = queue_picture(is, p_frame, pts, duration, p_frame->pkt_pos); // 将当前帧压入frame_queue
         av_frame_unref(p_frame);
 
-        if(ret < 0) {
+        if(ret < 0)
+        {
             av_frame_unref(p_frame);
             return 0;
         }
     }
 }
 
+// 职责：
+// 1. 返回达成同步条件的视频帧播放延迟时间
 double Video::compute_target_delay(double delay, PlayerStat *is)
 {
-    double sync_threshold, diff = 0;
+    double sync_threshold /*同步域*/, diff = 0;
 
     // 视频时钟与同步时钟（如音频时钟）的差异，时钟值是上一帧pts值（实为： 上一帧pts + 上一帧至今流逝的时间差）
     diff = PlayerClock::get_clock(&is->video_clk) - PlayerClock::get_clock(&is->audio_clk); // diff可能是正值也可以是负值
@@ -158,19 +170,23 @@ double Video::compute_target_delay(double delay, PlayerStat *is)
     return delay;
 }
 
+// 职责：
+// 1. 计算上一帧需要播放的时间
+// ps：若上一帧的播放时间早于下一帧的播放时间，则为正常情况，故返回两帧之间的时间差值作为上一帧的播放时长
+//     若上一帧的播放时间晚于下一帧的播放时间，则为非常情况，故返回上一帧原本的播放时长
 double Video::vp_duration(PlayerStat *is, Frame *vp, Frame *nextvp)
 {
-    if(vp->serial == nextvp->serial)
+    if(vp->serial == nextvp->serial) // 当前帧与下一帧的序列相同
     {
-        double duration = nextvp->pts - vp->pts;
-        if(isnan(duration) || duration <= 0)
-            return vp->duration;
+        double duration = nextvp->pts - vp->pts; // 计算出两帧的时间差
+        if(isnan(duration) || duration <= 0) // 计算值为无理数或下一帧的播放时间早于上一帧的播放时间
+            return vp->duration; // 返回当前帧的持续时间
         else
-            return duration;
+            return duration; // 返回两帧差值
     }
     else
     {
-        return 0.0;
+        return 0.0; // 序列不同则返回0.0
     }
 }
 
@@ -179,10 +195,17 @@ void Video::update_video_pts(PlayerStat *is, double pts, int64_t pos, int serial
     PlayerClock::set_clock(&is->video_clk, pts, serial);        // 更新video clock
 }
 
+// 职责：
+// 1. 读取一个帧
+// 2. 对读取帧进行图像转换
+// 3. 使用yuv格式更新图像
+// 4. 以指定颜色清空渲染目标
+// 5. 使用转换后的图像更新渲染目标
+// 6. 执行渲染
 void Video::video_display(PlayerStat *is)
 {
     Frame *vp;
-    vp = FrameQueue::frame_queue_peek_last(&is->video_frm_queue);
+    vp = FrameQueue::frame_queue_peek_last(&is->video_frm_queue); // 返回当前读索引指向的帧
 
     // 图像转换：p_frm_raw->data ==> p_frm_yuv->data
     // 将源图像中一片连续的区域经过处理后更新到目标体香对应区域，处理的图像区域必须逐行连续
@@ -220,17 +243,20 @@ void Video::video_display(PlayerStat *is)
                    &is->sdl_video.rect              // dst rect
                    );
 
-    // 执行渲染
+    // 执行渲染(直接渲染该帧)
     SDL_RenderPresent(is->sdl_video.renderer);
 }
 
+// 职责：
+// 1. 循环处理前后帧
 void Video::video_refresh(void *opaque, double *remaining_time)
 {
     PlayerStat *is = static_cast<PlayerStat *>(opaque);
     double time;
     static bool first_frame = true;
 
-    while(1) {
+    while(1)
+    {
         std::cout << "video refresh" << std::endl;
         if(FrameQueue::frame_queue_nb_remaining(&is->video_frm_queue) == 0) // 所有帧已显示
         {
@@ -251,14 +277,15 @@ void Video::video_refresh(void *opaque, double *remaining_time)
         }
 
         // 暂停处理：不停播放上一帧
-        if(is->paused) {
+        if(is->paused)
+        {
             video_display(is);
         }
 
         last_duration = vp_duration(is, lastvp, vp);        // 上一帧播放时长：vp->pts - lastvp->pts
         delay = compute_target_delay(last_duration, is);    // 根据视频时钟和同步时钟的差值，计算delay值
 
-        time = av_gettime_relative() / 1000000.0;
+        time = av_gettime_relative() / 1000000.0; // 获取系统时间
         // 当前帧播放时刻（is->frame_timer + delay）大于当前时刻（time），表示播放时刻未到
         if(time < is->frame_timer + delay)
         {
@@ -295,10 +322,10 @@ void Video::video_refresh(void *opaque, double *remaining_time)
             }
         }
 
+        video_display(is);
+
         // 删除当前读指针元素，读指针+1.若未丢帧，则读指针从lastvp更新到vp；若有丢帧，读指针从vp更新到nextvp
         FrameQueue::frame_queue_next(&is->video_frm_queue);
-
-        video_display(is);
     }
 }
 
@@ -320,6 +347,10 @@ int Video::video_playing_thread(void *arg)
     return 0;
 }
 
+// 职责：
+// 1. 创建视频窗口
+// 2. 对解析出的视频帧进行格式转换
+// 3. 开启视频播放帧
 int Video::open_video_playing(void *arg)
 {
     PlayerStat *is = static_cast<PlayerStat *>(arg);
@@ -439,6 +470,11 @@ int Video::open_video_playing(void *arg)
     return 0;
 }
 
+// 职责：
+// 1. 寻找解码器
+// 2. 分配解码器上下文
+// 3. 打开解码器上下文
+// 4. 创建并打开解码线程
 int Video::open_video_stream(PlayerStat *is)
 {
     AVCodecParameters *p_codec_par = nullptr;
@@ -459,7 +495,7 @@ int Video::open_video_stream(PlayerStat *is)
         return -1;
     }
 
-     std::cout << "find codec!" << std::endl;
+    std::cout << "find codec!" << std::endl;
 
     // 1.3构建解码器AVCodecContext
     // 1.3.1 p_codec_ctx初始化：分配结构体，使用p_codec初始化相应成员为默认值
@@ -480,7 +516,8 @@ int Video::open_video_stream(PlayerStat *is)
 
     // 1.3.3 p_codec_ctx初始化：使用p_codec初始化p_codec_ctx，初始化完成
     ret = avcodec_open2(p_codec_ctx, p_codec, nullptr);
-    if(ret < 0) {
+    if(ret < 0)
+    {
         std::cout << "avcodec_open2() " << ret << std::endl;
         return -1;
     }
@@ -495,8 +532,8 @@ int Video::open_video_stream(PlayerStat *is)
 
 int Video::open_video(PlayerStat *is)
 {
-    open_video_stream(is);
-    open_video_playing(is);
+    open_video_stream(is); // 开启视频流
+    open_video_playing(is); // 开启视频播放
 
     return 0;
 }

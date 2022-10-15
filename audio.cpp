@@ -349,10 +349,12 @@ int Audio::audio_resample(PlayerStat *is, int64_t audio_callback_time)
     }
 
     audio_clock0 = is->audio_clock;
-    if(!isnan(af->pts)) {
+    if(!isnan(af->pts))
+    {
         is->audio_clock = af->pts + static_cast<double>(af->frame->nb_samples) / af->frame->sample_rate;
     }
-    else {
+    else
+    {
         is->audio_clock = NAN;
     }
     is->audio_clock_serial = af->serial;
@@ -400,7 +402,8 @@ int Audio::open_audio_playing(void *arg)
     is->audio_param_tgt.channels = actual_spec.channels;
     is->audio_param_tgt.frame_size = av_samples_get_buffer_size(nullptr, actual_spec.channels, 1, is->audio_param_tgt.fmt, 1);
     is->audio_param_tgt.bytes_pre_sec = av_samples_get_buffer_size(nullptr, actual_spec.channels, actual_spec.freq, is->audio_param_tgt.fmt, 1);
-    if(is->audio_param_tgt.bytes_pre_sec <= 0 || is->audio_param_tgt.frame_size <= 0) {
+    if(is->audio_param_tgt.bytes_pre_sec <= 0 || is->audio_param_tgt.frame_size <= 0)
+    {
         av_log(nullptr, AV_LOG_ERROR, "av_samples_get_buffer_size failed\n");
         return -1;
     }

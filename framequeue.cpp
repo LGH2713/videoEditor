@@ -12,7 +12,7 @@ FrameQueue::~FrameQueue()
 
 int FrameQueue::frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size, int keep_last)
 {
-    memset(f, 0, sizeof(FrameQueue));
+    memset(f, 0, sizeof(FrameQueue)); // 清空帧队列数据（全部置零）
 
     // 创建SDL互斥锁
     if(!(f->mutex = SDL_CreateMutex())) {
@@ -27,7 +27,7 @@ int FrameQueue::frame_queue_init(FrameQueue *f, PacketQueue *pktq, int max_size,
     }
 
     // 设置帧队列初始化属性
-    f->pktq = pktq;
+    f->pktq = pktq; // 帧队列里有包队列？
     f->max_size = max_size;
     f->keep_last = keep_last;
 
@@ -79,7 +79,8 @@ Frame *FrameQueue::frame_queue_peek_last(FrameQueue *f)
 Frame *FrameQueue::frame_queue_peek_writable(FrameQueue *f)
 {
     SDL_LockMutex(f->mutex);
-    while(f->size >= f->max_size && !f->pktq->abort_request) {
+    while(f->size >= f->max_size && !f->pktq->abort_request)
+    {
         SDL_CondWait(f->cond, f->mutex);
     }
     SDL_UnlockMutex(f->mutex);
@@ -94,7 +95,8 @@ Frame *FrameQueue::frame_queue_peek_writable(FrameQueue *f)
 Frame *FrameQueue::frame_queue_peek_readable(FrameQueue *f)
 {
     SDL_LockMutex(f->mutex);
-    while(f->size - f->rindex_shown <= 0 && !f->pktq->abort_request) {
+    while(f->size - f->rindex_shown <= 0 && !f->pktq->abort_request)
+    {
         SDL_CondWait(f->cond, f->mutex);
     }
     SDL_UnlockMutex(f->mutex);

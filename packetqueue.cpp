@@ -9,12 +9,14 @@ int PacketQueue::packet_queue_init(PacketQueue *q)
 {
     memset(q, 0, sizeof(PacketQueue));
     q->mutex = SDL_CreateMutex();
-    if(!q->mutex) {
+    if(!q->mutex)
+    {
         std::cout << "SDL_CreateMutex(): " << SDL_GetError() << std::endl;
         return AVERROR(ENOMEM);
     }
     q->cond = SDL_CreateCond();
-    if(!q->cond) {
+    if(!q->cond)
+    {
         std::cout << "SDL_CreateCond(): " << SDL_GetError() << std::endl;
         return AVERROR(ENOMEM);
     }
@@ -25,7 +27,7 @@ int PacketQueue::packet_queue_init(PacketQueue *q)
 //写队列尾部。pkt是一包还未解码的音频数据
 int PacketQueue::packet_queue_put(PacketQueue *q, AVPacket *pkt)
 {
-    PacketList *pkt_list;
+    PacketList *pkt_node; // 初始化一个包列表节点
 
     if(av_packet_make_refcounted(pkt) < 0) // 确保给定数据包所描述的数据被引用计数。
     {
@@ -33,29 +35,30 @@ int PacketQueue::packet_queue_put(PacketQueue *q, AVPacket *pkt)
         return -1;
     }
 
-    pkt_list = static_cast<PacketList *>(av_malloc(sizeof(PacketList)));
-    if(!pkt_list)
+    pkt_node = static_cast<PacketList *>(av_malloc(sizeof(PacketList))); // 为包列表节点分配空间
+    if(!pkt_node) // 分配空间失败则返回-1
         return -1;
 
-    pkt_list->pkt = *pkt;
-    pkt_list->next = nullptr;
+    pkt_node->pkt = *pkt; // 当前包列表节点的包为传入的数据包
+    pkt_node->next = nullptr; // 下一个包节点为空
 
-    SDL_LockMutex(q->mutex);
+    SDL_LockMutex(q->mutex); // 锁住包队列的互斥量，为后面包队列内容修改做准备
 
-    if(!q->last_pkt) //队列为空
+    if(!q->last_pkt) //尾节点为空，则包队列的头节点数据为空包的节点pkt_node
     {
-        q->first_pkt = pkt_list;
+        q->first_pkt = pkt_node;
     }
-    else {
-        q->last_pkt->next = pkt_list;
+    else // 若队列不为空，则队列的尾节点的下一个节点为传入的数据包
+    {
+        q->last_pkt->next = pkt_node;
     }
-    q->last_pkt = pkt_list;
-    q->nb_packets++;
-    q->size += pkt_list->pkt.size;
+    q->last_pkt = pkt_node; // 尾节点新增的数据包
+    q->nb_packets++; // 包计数+1
+    q->size += pkt_node->pkt.size; // 包队列空间大小加一个包节点大小
 
     // 发送条件变量的信号，重启等待q->cond条件变量的一个线程
     SDL_CondSignal(q->cond);
-    SDL_UnlockMutex(q->mutex);
+    SDL_UnlockMutex(q->mutex); // 解锁互斥量
     return 0;
 }
 
@@ -66,7 +69,8 @@ int PacketQueue::packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
 
     SDL_LockMutex(q->mutex);
 
-    while(1) {
+    while(1)
+    {
         p_pkt_node = q->first_pkt;
         if(p_pkt_node) // 队列非空，取一个出来
         {
@@ -77,7 +81,7 @@ int PacketQueue::packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
             }
             q->nb_packets --; // 队列计数-1
             q->size -= p_pkt_node->pkt.size; // 更新队列容量大小
-            *pkt = p_pkt_node->pkt; // pkt装载着队列取出的数据
+            *pkt = p_pkt_node->pkt; // pkt装载着队列取出的数据（返回数据位置）
             av_free(p_pkt_node); // 释放p_pkt_node内存
             ret = 1;
             break;
