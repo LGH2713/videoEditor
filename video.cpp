@@ -348,7 +348,7 @@ int Video::video_playing_thread(void *arg)
 // 1. 创建视频窗口
 // 2. 对解析出的视频帧进行格式转换
 // 3. 开启视频播放帧
-int Video::open_video_playing(PlayerStat *is)
+int Video::open_video_playing(PlayerStat *is, int width, int height)
 {
     int ret;
     int buf_size;

@@ -7,24 +7,18 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    QMenuBar *menuBar = new QMenuBar();
+    this->setMenuBar(menuBar); // 添加菜单栏
+    QMenu *fileMenu = menuBar->addMenu("文件"); // 添加菜单栏项
+    QAction *selectFileAction = fileMenu->addAction("选择文件"); // 添加动作
+    QObject::connect(selectFileAction, SIGNAL(triggered(bool)), this, SLOT(selectFile())); // 连接动作信号和槽
+    fileMenu->addSeparator();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
 }
-
-
-void MainWindow::on_fileSelect_clicked()
-{
-    QString fileName = QFileDialog::getOpenFileName(
-                this,
-                tr("open a file"),
-                "E:/",
-                tr("video files(*.avi *.mp4 *.wmv *.h265 *.mkv);All files(*.*)"));
-    ui->fileName->setText(fileName);
-}
-
 
 void MainWindow::on_playButton_clicked()
 {
@@ -46,7 +40,7 @@ void MainWindow::on_playButton_clicked()
     player->video->open_video_stream(player->is); // 开启视频流
     player->audio->open_audio_stream(player->is); // 开启音频流
 
-    player->video->open_video_playing(player->is); // 开启视频播放
+    player->video->open_video_playing(player->is, ui->player->width(), ui->player->height()); // 开启视频播放
 
     player->is->sdl_video.window = SDL_CreateWindowFrom((void *)ui->player->winId());
 
@@ -86,5 +80,15 @@ void MainWindow::on_playButton_clicked()
     player->audio->open_audio_playing(player->is); // 开启音频播放
 
     player->playing_running();
+}
+
+void MainWindow::selectFile()
+{
+    QString fileName = QFileDialog::getOpenFileName(
+                this,
+                tr("open a file"),
+                "E:/",
+                tr("video files(*.avi *.mp4 *.wmv *.h265 *.mkv);All files(*.*)"));
+    ui->fileName->setText(fileName);
 }
 

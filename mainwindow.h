@@ -19,9 +19,9 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_fileSelect_clicked();
-
     void on_playButton_clicked();
+
+    void selectFile();
 
 public:
     Ui::MainWindow *ui;
