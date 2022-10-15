@@ -257,7 +257,6 @@ void Video::video_refresh(void *opaque, double *remaining_time)
 
     while(1)
     {
-        std::cout << "video refresh" << std::endl;
         if(FrameQueue::frame_queue_nb_remaining(&is->video_frm_queue) == 0) // 所有帧已显示
         {
             return ;
@@ -329,6 +328,8 @@ void Video::video_refresh(void *opaque, double *remaining_time)
     }
 }
 
+// 职责：
+// 1. 视频播放线程（刷新前后帧播放）
 int Video::video_playing_thread(void *arg)
 {
     PlayerStat *is = static_cast<PlayerStat *>(arg);
@@ -340,8 +341,8 @@ int Video::video_playing_thread(void *arg)
         {
             av_usleep(static_cast<unsigned>(remaining_time * 1000000.0));
         }
-        remaining_time = REFRESH_RATE;
-        video_refresh(is, &remaining_time);
+        remaining_time = REFRESH_RATE; // 视频刷新率
+        video_refresh(is, &remaining_time); // 刷新前后帧
     }
 
     return 0;
@@ -463,8 +464,6 @@ int Video::open_video_playing(void *arg)
         return -1;
     }
 
-    std::cout << "create window renderer texture" << std::endl;
-
     SDL_CreateThread(video_playing_thread, "video playing thread", is);
 
     return 0;
@@ -494,8 +493,6 @@ int Video::open_video_stream(PlayerStat *is)
         std::cout << "Cann't find codec!" << std::endl;
         return -1;
     }
-
-    std::cout << "find codec!" << std::endl;
 
     // 1.3构建解码器AVCodecContext
     // 1.3.1 p_codec_ctx初始化：分配结构体，使用p_codec初始化相应成员为默认值

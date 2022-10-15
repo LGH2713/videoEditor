@@ -131,8 +131,6 @@ void Player::player_init(const char * p_input_file)
 
 int Player::player_deinit(PlayerStat *is)
 {
-    std::cout << "player_deinit()" << std::endl;
-
     is->abort_request = 1; // 放弃请求标识设为真
     SDL_WaitThread(is->read_tid, nullptr);
 

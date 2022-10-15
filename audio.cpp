@@ -5,6 +5,9 @@ Audio::Audio()
 
 }
 
+// 职责：
+// 1. 音频回调函数
+
 void Audio::sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 {
     PlayerStat *is = static_cast<PlayerStat *>(opaque);
@@ -14,7 +17,6 @@ void Audio::sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 
     while(len > 0) //输入参数len等于is->audio_hw_buf_size，是audio_open()中申请到的SDL音频缓冲区大小
     {
-        std::cout << "audio callback" << std::endl;
         if(is->audio_cp_index >= static_cast<int>(is->audio_frm_size)) {
             // 1.从音频frame队列中取出一个frame，转换为音频设备支持格式，返回值是重采样音频帧的大小
             audio_size = audio_resample(is, audio_callback_time);
@@ -67,10 +69,14 @@ int Audio::audio_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
 {
     int ret;
 
-    while(1) {
+    while(1)
+    {
         AVPacket pkt;
 
-        while(1) {
+        std::cout << "audio decode frame" << std::endl;
+
+        while(1)
+        {
             // 一个音频packet含有一或多个音频frame，每次avcodec_receive_frame()返回一个frame，此函数返回
             // 下次进来此函数，继续获取一个frame，知道avcodec_receive_frame()返回AVERROR(EAGAIN)，
             // 表示解码器需要填入新的音频packet
@@ -86,6 +92,7 @@ int Audio::audio_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
                 {
                     av_log(nullptr, AV_LOG_WARNING, "frame->pts no\n");
                 }
+
                 return 1;
             }
             else if(ret == AVERROR_EOF)
@@ -109,6 +116,7 @@ int Audio::audio_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
         // 1.取出一个packet。使用pkt对应的serial赋值给d->pkt_serial
         if(PacketQueue::packet_queue_get(p_pkt_queue, &pkt, true) < 0)
         {
+            std::cout << "cann't get packet" << std::endl;
             return -1;
         }
 
@@ -151,7 +159,9 @@ int Audio::audio_decode_thread(void *arg)
     while(1) {
         // 将音频数据解码成帧
         got_frame = audio_decode_frame(is->p_acodec_ctx, &is->audio_pkt_queue, p_frame);
-        if(got_frame < 0) {
+        if(got_frame < 0)
+        {
+            std::cout << "unref frame" << std::endl;
             av_frame_unref(p_frame);
             return ret;
         }
@@ -163,6 +173,7 @@ int Audio::audio_decode_thread(void *arg)
             // 从帧队列中取出一个可写帧指针
             if(!(af = FrameQueue::frame_queue_peek_writable(&is->audio_frm_queue)))
             {
+                std::cout << "no writable audio packet" << std::endl;
                 av_frame_unref(p_frame);
                 return ret;
             }

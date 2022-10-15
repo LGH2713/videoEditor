@@ -31,9 +31,10 @@ int Demux::demux_init(PlayerStat *is)
     p_fmt_ctx->interrupt_callback.opaque = is; // 设置回调函数的参数
 
     // 1.构建AVFormatContext
-    // 1.1打开视频文件，读取文件头，将文件格式信息储存在”fmt context“ 中
+    // 1.1打开视频文件，读取文件头，将文件格式信息储存在”fmt context"中
     err = avformat_open_input(&p_fmt_ctx, is->fileName, nullptr, nullptr);
-    if(err < 0) {
+    if(err < 0)
+    {
         std::cout << "avformat_open_input() failed " << err << std::endl;
         fail(p_fmt_ctx, -1);
     }
@@ -43,14 +44,16 @@ int Demux::demux_init(PlayerStat *is)
     // 1.2 搜索流信息：读取一段视频文件数据，尝试解码，将取到的信息填入p_fmt_ctx->streams
     // ic->streams是一个指针数组，数组大小是pFormatCtx->nb_streams
     err = avformat_find_stream_info(p_fmt_ctx, nullptr);
-    if(err < 0) {
+    if(err < 0)
+    {
         std::cout << "avformat_find_stream_info() failed " << err << std::endl;
         fail(p_fmt_ctx, -1);
     }
     // 2. 查找第一个音频流/视频流
     a_index = -1;
     v_index = -1;
-    for(int i = 0; i < static_cast<int>(p_fmt_ctx->nb_streams); i++) {
+    for(int i = 0; i < static_cast<int>(p_fmt_ctx->nb_streams); i++)
+    {
         if((p_fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) &&
                 (a_index == -1))
         {
@@ -63,7 +66,8 @@ int Demux::demux_init(PlayerStat *is)
             v_index = i;
             std::cout << "Find a video stream, index " << v_index << std::endl;
         }
-        if(a_index != -1 && v_index != -1) {
+        if(a_index != -1 && v_index != -1)
+        {
             break;
         }
     }
@@ -100,17 +104,15 @@ int Demux::demux_thread(void *arg)
     PlayerStat *is = static_cast<PlayerStat *>(arg); // 音视频结构体格式转换
     AVFormatContext *p_fmt_ctx = is->p_fmt_ctx;      // 获取音视频格式上下文
     int ret;
-    AVPacket *pkt;
+    AVPacket *pkt = av_packet_alloc(); // 一定要先分配空间
 
     SDL_mutex *wait_mutex = SDL_CreateMutex(); // 创建线程互斥量
 
     std::cout << "demux_thread running..." << std::endl;
 
     // 4.解复用处理
-    while(1) {
-
-        std::cout << "demux callback" << std::endl;
-
+    while(1)
+    {
         if(is->abort_request) // 如果终止标识为真则直接跳出循环
         {
             std::cout << "demux abort" << std::endl;
@@ -123,7 +125,6 @@ int Demux::demux_thread(void *arg)
                 (stream_has_enough_packets(is->p_audio_stream, is->audio_index, &is->audio_pkt_queue) && // 音频包队列有足够数据
                  stream_has_enough_packets(is->p_video_stream, is->video_index, &is->video_pkt_queue)))  // 视频包队列有足够数据
         {
-            std::cout << "demux lock" << std::endl;
             // 等待 10 毫秒
             SDL_LockMutex(wait_mutex); // 锁住互斥量
             SDL_CondWaitTimeout(is->continue_read_thread, wait_mutex, 10); // 条件变量10毫秒后解开
@@ -135,7 +136,6 @@ int Demux::demux_thread(void *arg)
         ret = av_read_frame(is->p_fmt_ctx, pkt);
         if(ret < 0)
         {
-            std::cout << "put null packet in queue" << std::endl;
             if(ret == AVERROR_EOF)
             {
                 // 输入文件已读完，则往packet队列中发送NULL packet，以冲洗（flush）解码器，否则解码器中缓存的帧取不出来
