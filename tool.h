@@ -2,6 +2,7 @@
 #define TOOL_H
 
 extern "C" {
+#undef main
 #include <libavcodec//avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
@@ -14,7 +15,6 @@ extern "C" {
 #include <SDL_render.h>
 #include <SDL_rect.h>
 #include <SDL_mutex.h>
-#undef main
 }
 
 #include <iostream>

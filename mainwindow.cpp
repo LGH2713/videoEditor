@@ -24,12 +24,12 @@ void MainWindow::on_playButton_clicked()
 {
     std::string fileName = ui->fileName->text().toStdString();
     Player *player = new Player(fileName);
-    if(!player->input_filename.c_str())
+    if(!player->input_filename.c_str()) // 文件名不存在则返回
     {
         return;
     }
 
-    player->player_init(player->input_filename.c_str());
+    player->player_init(player->input_filename.c_str()); // 初始化player
     if(player == nullptr)
     {
         std::cout << "player init failed\n" << std::endl;
@@ -40,6 +40,7 @@ void MainWindow::on_playButton_clicked()
     player->video->open_video_stream(player->is); // 开启视频流
     player->audio->open_audio_stream(player->is); // 开启音频流
 
+//    ui->player->setMinimumSize(player->is->p_vcodec_ctx->width, player->is->p_vcodec_ctx->height);
     /*视频播放代码*/
     player->video->open_video_playing(player->is, ui->player->width(), ui->player->height()); // 开启视频播放
 
@@ -77,15 +78,15 @@ void MainWindow::on_playButton_clicked()
 
     SDL_CreateThread(player->video->video_playing_thread, "video playing thread", player->is);
 
-
     /*音频播放代码*/
     player->audio->open_audio_playing(player->is); // 开启音频播放
 
-    player->playing_running();
+//    player->playing_running();
 }
 
 void MainWindow::selectFile()
 {
+    // 打开文件选择对话框
     QString fileName = QFileDialog::getOpenFileName(
                 this,
                 tr("open a file"),

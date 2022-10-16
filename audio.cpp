@@ -79,7 +79,6 @@ int Audio::audio_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
             // 下次进来此函数，继续获取一个frame，知道avcodec_receive_frame()返回AVERROR(EAGAIN)，
             // 表示解码器需要填入新的音频packet
             ret = avcodec_receive_frame(p_codec_ctx, frame);
-            std::cout << "ret: " << ret << std::endl;
             if(ret >= 0) {
                 // 时基转换，从d->avctx->pkt_time时基转换到1/frame->sample_rate时基
                 AVRational tb = (AVRational) {1, frame->sample_rate};
@@ -91,6 +90,8 @@ int Audio::audio_decode_frame(AVCodecContext *p_codec_ctx, PacketQueue *p_pkt_qu
                 {
                     av_log(nullptr, AV_LOG_WARNING, "frame->pts no\n");
                 }
+
+                std::cout << "audio avcodec successfully" << std::endl;
 
                 return 1;
             }
@@ -254,13 +255,13 @@ int Audio::audio_resample(PlayerStat *is, int64_t audio_callback_time)
     int wanted_nb_samples;
     Frame *af, *default_frame;
 
-#if defined(_WIN32)
-    while(FrameQueue::frame_queue_nb_remaining(&is->audio_frm_queue) == 0) {
-        if((av_gettime_relative() - audio_callback_time) > 1000000LL * is->audio_hw_buf_size / is->audio_param_tgt.bytes_pre_sec / 2)
-            return -1;
-        av_usleep(1000);
-    }
-#endif
+    //#if defined(_WIN32)
+    //    while(FrameQueue::frame_queue_nb_remaining(&is->audio_frm_queue) == 0) {
+    //        if((av_gettime_relative() - audio_callback_time) > 1000000LL * is->audio_hw_buf_size / is->audio_param_tgt.bytes_pre_sec / 2)
+    //            return -1;
+    //        av_usleep(1000);
+    //    }
+    //#endif
 
     // 若队列头部可读，则由af指向可读帧
     if(!(af = FrameQueue::frame_queue_peek_readable(&is->audio_frm_queue)))
@@ -390,18 +391,16 @@ int Audio::open_audio_playing(void *arg)
     wanted_spec.format = AUDIO_S16SYS;                                  // S代表符号，16是采样深度，sys代表采用系统字节序
     wanted_spec.channels = is->p_acodec_ctx->ch_layout.nb_channels;     // 声音通道数
     wanted_spec.silence = 0;                                            // 静音值
-    // wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;                     // SDL声音缓冲区尺寸，单位是单声道采样点尺寸x通道数
+     wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;                     // SDL声音缓冲区尺寸，单位是单声道采样点尺寸x通道数
     // SDL声音缓冲区尺寸，单位是单声道采样点尺寸x声道数
     wanted_spec.samples = FFMAX(SDL_AUDIO_MIN_BUFFER_SIZE, 2 << av_log2(wanted_spec.freq / SDL_AUDIO_MAX_CALLBACKS_PRE_SEC));
-//    wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
+    //    wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
     wanted_spec.callback = sdl_audio_callback;                          // 回调函数，若为nullptr，则应使用SDL_QueueAudio()机制
     wanted_spec.userdata = is;
     // 提供回调函数需要的参数
 
 
-    int temp = SDL_OpenAudio(&wanted_spec, &actual_spec);
-    std::cout << "temp: " << temp << std::endl;
-    if(temp < 0)
+    if(SDL_OpenAudio(&wanted_spec, &actual_spec) < 0)
     {
         av_log(nullptr, AV_LOG_ERROR, "SDL_OpenAudio() failed: %s\n", SDL_GetError());
         return -1;
@@ -415,6 +414,7 @@ int Audio::open_audio_playing(void *arg)
     is->audio_param_tgt.fmt = AV_SAMPLE_FMT_S16;
     is->audio_param_tgt.freq = actual_spec.freq;
     av_channel_layout_default(&is->audio_param_tgt.channel_layout, actual_spec.channels);
+//    std::cout << "channel: " << is->audio_param_tgt.channel_layout.nb_channels << std::endl;
     is->audio_param_tgt.channels = actual_spec.channels;
     is->audio_param_tgt.frame_size = av_samples_get_buffer_size(nullptr, actual_spec.channels, 1, is->audio_param_tgt.fmt, 1);
     is->audio_param_tgt.bytes_pre_sec = av_samples_get_buffer_size(nullptr, actual_spec.channels, actual_spec.freq, is->audio_param_tgt.fmt, 1);

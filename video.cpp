@@ -396,13 +396,13 @@ int Video::open_video_playing(PlayerStat *is, int width, int height)
     //     如果解码后得到的图像不被SDL支持，不进行图像转换的话，SDL是无法正常显示图像的
     //     如果解码后得到的图像能被SDL支持，则不必进行图像转换
     //     这里为了编码方便，统一转换为SDL支持的格式AV_PIX_FMT_YUV420P ==> SDL_PIXELFORMAT_IYUV
-    is->img_convert_ctx = sws_getContext(is->p_vcodec_ctx->width,
-                                         is->p_vcodec_ctx->height,
+    is->img_convert_ctx = sws_getContext(is->p_vcodec_ctx->width, // 视频原宽
+                                         is->p_vcodec_ctx->height, // 视频原高
                                          is->p_vcodec_ctx->pix_fmt,
-                                         width,
-                                         height,
+                                         width, // 视频缩放后的宽度
+                                         height, // 视频缩放后的高度
                                          AV_PIX_FMT_YUV420P,
-                                         SWS_BICUBIC,
+                                         SWS_BICUBIC, // 视频缩放算法
                                          nullptr,
                                          nullptr,
                                          nullptr
